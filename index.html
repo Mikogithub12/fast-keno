@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FAST KENO - AI የታገዘ ማሸነፊያ (እውነተኛ ቦቶች)</title>
-    <!-- የቴሌግራም ዌብ አፕ ስክሪፕት -->
+    <!-- የቴሌግราม ዌብ አፕ ስክሪፕት -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -216,7 +216,8 @@
             <button class="btn-gold" onclick="handleLogin()">ወደ ጨዋታ ግባ</button>
         </div>
         <div id="regPanel" style="display:none;">
-            <div class="bonus-text">🎁 አዲስ ምዝገባ 50 ብር ነጻ ቦነስ!</div>
+            <!-- 🔥 እዚህ ጋር የነበረው 50 ብር ወደ 15 ብር ተቀይሯል! -->
+            <div class="bonus-text">🎁 አዲስ ምዝገባ 15 ብር ነጻ ቦነስ!</div>
             <input type="number" id="regPhone" class="input-field" placeholder="ስልክ ቁጥር">
             <input type="password" id="regPass" class="input-field" placeholder="ፓስወርድ (ከ4 ፊደል)">
             <button class="btn-gold" onclick="handleRegister()">ተመዝገብ & ቦነስ አግኝ</button>
@@ -360,14 +361,12 @@
 </div>
 
 <script>
-    // የቴሌግራም ዌብ አፕ አጀማመር
     const tg = window.Telegram.WebApp;
     if (tg) {
         tg.ready();
         tg.expand();
     }
 
-    // በአዲሱ የFirebase ዳታቤዝ ሊንክህ የተካው config
     const firebaseConfig = { databaseURL: "https://fast-keno-game-94b16-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -524,9 +523,9 @@
 
     async function placeBet() {
         if(!currentUser) return;
-        if(selectedNumbers.size < 2) return alert("ቢያንስ 2 ቁጥሮችን ይምረጡ!");
+        if(selectedNumbers.size < 1) return alert("እባክዎ ቢያንስ 1 ቁጥር ይምረጡ!");
         if(currentBet < 10) return alert("ዝቅተኛው 10 ብር!");
-        if(currentUser.balance < currentBet) return alert("ባላንስ በቂ አይደለም! ብር ይሙሉ።");
+        if(currentUser.balance < currentBet) return alert("ባላንስ በቂ አይደለም! እባክዎ አካውንቶን ይሙሉ።");
         if(kenoGameActive) return alert("ጨዋታ በሂደት ላይ ነው!");
         
         await db.ref(`users/${currentUser.id}/balance`).transaction(b => (b||0) - currentBet);
@@ -720,13 +719,12 @@
             if(selectionTimeLeft <= 0 && !kenoGameActive && !isDrawing) {
                 clearInterval(countdownInterval);
                 countdownInterval = null;
-                if(selectedNumbers.size >= 2) { lastBetNumbers = Array.from(selectedNumbers); }
+                if(selectedNumbers.size >= 1) { lastBetNumbers = Array.from(selectedNumbers); }
                 startDraw();
             }
         }, 1000);
     }
 
-    // --- በአንተ አዲስ መረጃ የተስተካከለ ADMIN AUTH ---
     function showAdminAuth() {
         document.getElementById('adminAuthOverlay').style.display = 'flex';
         document.getElementById('adminAuthStep').style.display = 'block';
@@ -767,7 +765,6 @@
 
     function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; adminCodeVerified = false; }
 
-    // --- Double tap detection (በ 5 ሰከንድ ውስጥ 2 ጊዜ ስክሪኑን መንካት) ---
     let lastTapTime = 0;
     let tapCount = 0;
     document.addEventListener('click', function(e) {
@@ -784,7 +781,6 @@
         lastTapTime = now;
     });
 
-    // --- AUTH ሎጂክ ---
     window.switchAuth = (mode) => {
         document.getElementById('loginPanel').style.display = mode === 'login' ? 'block' : 'none';
         document.getElementById('regPanel').style.display = mode === 'register' ? 'block' : 'none';
@@ -802,12 +798,14 @@
         if(ipCheck.exists()) { document.getElementById('authError').innerHTML = "ይህ መሳሪያ አስቀድሞ አካውንት ከፍቷል!"; return; }
         const existing = await db.ref(`users/${phone}`).once('value');
         if(existing.exists()) { document.getElementById('authError').innerHTML = "ይህ ተጠቃሚ ተመዝግቧል!"; return; }
+        
+        // 🔥 እዚህ ጋር አዲስ ተጠቃሚ ሲመዘገብ የሚሰጠው የቦነስ ባላንስ ከ 50 ወደ 15 ተቀይሯል!
         await db.ref(`users/${phone}`).set({
-            id: phone, password: pass, balance: 50, ip: currentIp, joined: Date.now(),
+            id: phone, password: pass, balance: 15, ip: currentIp, joined: Date.now(),
             registeredPhone: phone, totalGames: 0, wins: 0, totalBet: 0
         });
         await db.ref(`ip_registry/${ipKey}`).set(phone);
-        document.getElementById('authError').innerHTML = "✅ ተመዝግበዋል! 50 ብር ቦነስ! አሁን ይግቡ";
+        document.getElementById('authError').innerHTML = "✅ ተመዝግበዋል! 15 ብር ቦነስ! አሁን ይግቡ";
         switchAuth('login');
     };
     
@@ -868,7 +866,6 @@
     function openWithdraw() { document.getElementById('withdrawModal').style.display='flex'; }
     function closeWithdraw() { document.getElementById('withdrawModal').style.display='none'; }
 
-    // --- Admin Functions ---
     window.adminRecharge = async () => {
         let target = document.getElementById('adminTarget').value.trim();
         let amt = parseFloat(document.getElementById('adminAmt').value);
