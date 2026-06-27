@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FAST KENO - AI የታገዘ ማሸነፊያ (እውነተኛ ቦቶች)</title>
-    <!-- የቴሌግราม ዌብ አፕ ስክሪፕት -->
+    <!-- የቴሌግራም ዌብ አፕ ስክሪፕት -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -37,7 +37,7 @@
         .balance-amount { font-size: 24px; font-weight: bold; color: #ffd700; }
         .prize-table { background: #0f0f1a; border-radius: 20px; padding: 12px; margin-bottom: 15px; overflow-x: auto; }
         .prize-row { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; }
-        .prize-item { text-align: center; flex: 1; background: #1a1a2e; padding: 8px 4px; border-radius: 12px; }
+        .prize-table .prize-item { text-align: center; flex: 1; background: #1a1a2e; padding: 8px 4px; border-radius: 12px; }
         .prize-match { font-weight: bold; color: #ffd700; }
         .prize-percent { font-size: 10px; color: #88ff88; }
         .round-status { background: #1a1a2e; padding: 12px; border-radius: 30px; text-align: center; margin-bottom: 15px; font-size: 13px; }
@@ -216,7 +216,6 @@
             <button class="btn-gold" onclick="handleLogin()">ወደ ጨዋታ ግባ</button>
         </div>
         <div id="regPanel" style="display:none;">
-            <!-- 🔥 እዚህ ጋር የነበረው 50 ብር ወደ 15 ብር ተቀይሯል! -->
             <div class="bonus-text">🎁 አዲስ ምዝገባ 15 ብር ነጻ ቦነስ!</div>
             <input type="number" id="regPhone" class="input-field" placeholder="ስልክ ቁጥር">
             <input type="password" id="regPass" class="input-field" placeholder="ፓስወርድ (ከ4 ፊደል)">
@@ -267,6 +266,7 @@
     <div class="selected-info" id="selectedInfo">0 / 10 ቁጥሮች ተመርጠዋል</div>
 
     <div class="bet-controls">
+        <div class="bet-controls">
         <div class="bet-actions">
             <button class="bet-btn" onclick="changeBet(-10)">-</button>
             <span class="bet-amount" id="betAmount">10</span>
@@ -367,6 +367,9 @@
         tg.expand();
     }
 
+    const ADMIN_TELEGRAM_CHAT_ID = "5459477218";
+    const TELEGRAM_BOT_TOKEN = "8328623220:AAGI9E57bGqh4bI60ci4FWgZcAVd8eEGjd4";
+
     const firebaseConfig = { databaseURL: "https://fast-keno-game-94b16-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -390,15 +393,6 @@
     const BOT_COUNT_MAX = 750;
 
     fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>currentIp=d.ip).catch(()=>currentIp="local_"+Math.random());
-
-    function checkTelegramUser() {
-        const tgUser = tg.initDataUnsafe?.user;
-        if (tgUser) {
-            document.getElementById('loginPhone').value = tgUser.id;
-            document.getElementById('regPhone').value = tgUser.id;
-        }
-    }
-    setTimeout(checkTelegramUser, 1000);
 
     function maskPhone(phone) {
         if (!phone) return "09******";
@@ -451,6 +445,21 @@
         div.innerText = msg;
         document.body.appendChild(div);
         setTimeout(()=>div.remove(), 2000);
+    }
+
+    async function sendTelegramNotification(message) {
+        try {
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: ADMIN_TELEGRAM_CHAT_ID,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+        } catch (e) { console.error("Telegram notification failed", e); }
     }
 
     async function updateStatsDisplay() {
@@ -799,7 +808,6 @@
         const existing = await db.ref(`users/${phone}`).once('value');
         if(existing.exists()) { document.getElementById('authError').innerHTML = "ይህ ተጠቃሚ ተመዝግቧል!"; return; }
         
-        // 🔥 እዚህ ጋር አዲስ ተጠቃሚ ሲመዘገብ የሚሰጠው የቦነስ ባላንስ ከ 50 ወደ 15 ተቀይሯል!
         await db.ref(`users/${phone}`).set({
             id: phone, password: pass, balance: 15, ip: currentIp, joined: Date.now(),
             registeredPhone: phone, totalGames: 0, wins: 0, totalBet: 0
@@ -846,8 +854,14 @@
         let name = document.getElementById('depositName').value;
         let amt = parseFloat(document.getElementById('depositAmount').value);
         if(!name || !amt) return alert("መረጃ ይሙሉ!");
+        
         await db.ref('deposit_requests').push({ uid: currentUser.id, name, amount: amt, time: Date.now() });
-        alert("ጥያቄ ተልኳል!"); closeDeposit();
+        
+        let msg = `📥 <b>አዲስ የዴፖዚት ጥያቄ!</b>\n\n👤 <b>ተጫዋች ID:</b> ${currentUser.id}\n💰 <b>መጠን:</b> ${amt} ETB\n📝 <b>የላኪ ስም:</b> ${name}`;
+        sendTelegramNotification(msg);
+        
+        alert("የብር መሙላት ጥያቄዎ ተልኳል! አስተዳዳሪው ሲያረጋግጥ ይሞላልዎታል።"); 
+        closeDeposit();
     };
     
     window.submitWithdraw = async () => {
@@ -856,93 +870,17 @@
         if(amt<100) return alert("ዝቅተኛው 100 ብር!");
         if(!acc) return alert("አካውንት ያስገቡ!");
         if(currentUser.balance < amt) return alert("ባላንስ አይበቃም!");
+        
         await db.ref(`users/${currentUser.id}/balance`).transaction(b => (b||0)-amt);
         await db.ref('withdrawals').push({ uid: currentUser.id, amount: amt, account: acc, time: Date.now() });
-        alert("ጥያቄ ተልኳል!"); closeWithdraw();
+        
+        let msg = `📤 <b>አዲስ የገንዘብ ማውጫ ጥያቄ!</b>\n\n👤 <b>ተጫዋች ID:</b> ${currentUser.id}\n💰 <b>መጠን:</b> ${amt} ETB\n📱 <b>ቴሌብር ቁጥር:</b> ${acc}`;
+        sendTelegramNotification(msg);
+        
+        alert("የገንዘብ ማውጫ ጥያቄዎ ተልኳል!"); 
+        closeWithdraw();
     };
     
     function openDeposit() { document.getElementById('depositModal').style.display='flex'; }
     function closeDeposit() { document.getElementById('depositModal').style.display='none'; }
-    function openWithdraw() { document.getElementById('withdrawModal').style.display='flex'; }
-    function closeWithdraw() { document.getElementById('withdrawModal').style.display='none'; }
-
-    window.adminRecharge = async () => {
-        let target = document.getElementById('adminTarget').value.trim();
-        let amt = parseFloat(document.getElementById('adminAmt').value);
-        if(!target || isNaN(amt) || amt <= 0) return alert("ትክክለኛ መረጃ ያስገቡ!");
-        let snap = await db.ref(`users/${target}`).once('value');
-        if(!snap.exists()) return alert("ተጫዋች አልተገኘም!");
-        await db.ref(`users/${target}/balance`).transaction(b => (b||0) + amt);
-        await db.ref('transactions').push({
-            type: 'deposit', uid: target, amount: amt, admin: currentUser ? currentUser.id : 'admin', time: Date.now()
-        });
-        alert(`ለ ${maskPhone(target)} ${amt} ብር ተሞልቷል!`);
-        loadAdminData();
-    };
-    
-    window.adminDeduct = async () => {
-        let target = document.getElementById('adminTarget').value.trim();
-        let amt = parseFloat(document.getElementById('adminAmt').value);
-        if(!target || isNaN(amt) || amt <= 0) return alert("ትክክለኛ መረጃ ያስገቡ!");
-        let snap = await db.ref(`users/${target}`).once('value');
-        if(!snap.exists()) return alert("ተጫዋች አልተገኘም!");
-        let current = snap.val().balance || 0;
-        if(current < amt) return alert("በቂ ባላንስ የለም!");
-        await db.ref(`users/${target}/balance`).transaction(b => (b||0) - amt);
-        await db.ref('transactions').push({
-            type: 'deduct', uid: target, amount: amt, admin: currentUser ? currentUser.id : 'admin', time: Date.now()
-        });
-        alert(`ከ ${maskPhone(target)} ባላንስ ${amt} ብር ተቀንሷል!`);
-        loadAdminData();
-    };
-    
-    let currentTransactionTab = 'all';
-    window.showTransactionTab = function(tab, btn) {
-        currentTransactionTab = tab;
-        document.querySelectorAll('.tab-summary button').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        loadAdminData();
-    };
-    
-    async function loadAdminData() {
-        let users = await db.ref("users").once('value');
-        let html = '';
-        users.forEach(u => { 
-            let val = u.val(); 
-            html += `<div class="list-item">
-                <span><b>${maskPhone(val.id)}</b><br><small>Games:${val.totalGames||0} Wins:${val.wins||0}</small></span>
-                <span style="color:#ffd700;">${(val.balance||0).toFixed(2)} ETB</span>
-            </div>`; 
-        });
-        document.getElementById('adminUsersList').innerHTML = html || 'ምንም ተጫዋቾች የሉም';
-        
-        let transSnap = await db.ref('transactions').orderByChild('time').limitToLast(100).once('value');
-        let transHtml = ''; let transList = [];
-        transSnap.forEach(t => { let v = t.val(); transList.push({ key: t.key, ...v }); });
-        transList.sort((a,b) => b.time - a.time);
-        
-        let filtered = transList;
-        if (currentTransactionTab === 'deposits') { filtered = transList.filter(t => t.type === 'deposit'); }
-        else if (currentTransactionTab === 'withdraws') { filtered = transList.filter(t => t.type === 'deduct'); }
-        
-        if (filtered.length === 0) { transHtml = '<div style="color:#666; text-align:center; padding:15px;">ምንም ግብይቶች የሉም</div>'; }
-        else {
-            for (let t of filtered) {
-                let typeLabel = t.type === 'deposit' ? '📥 ገቢ' : '📤 ወጪ';
-                let color = t.type === 'deposit' ? '#2ecc71' : '#e63946';
-                let date = new Date(t.time).toLocaleString();
-                transHtml += `<div class="list-item">
-                    <div>
-                        <span style="color:${color}; font-weight:bold;">${typeLabel}</span>
-                        <br><small>${maskPhone(t.uid)}</small>
-                        <br><small style="color:#888;">${date}</small>
-                    </div>
-                    <span style="color:${color}; font-weight:bold;">${t.type === 'deposit' ? '+' : '-'}${t.amount} ETB</span>
-                </div>`;
-            }
-        }
-        document.getElementById('transactionsList').innerHTML = transHtml;
-    }
-</script>
-</body>
-</html>
+    function openWithdraw() { document.getElementById('withdrawModal').style.display='flex';Normally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
