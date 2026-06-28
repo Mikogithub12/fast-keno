@@ -266,7 +266,6 @@
     <div class="selected-info" id="selectedInfo">0 / 10 ቁጥሮች ተመርጠዋል</div>
 
     <div class="bet-controls">
-        <div class="bet-controls">
         <div class="bet-actions">
             <button class="bet-btn" onclick="changeBet(-10)">-</button>
             <span class="bet-amount" id="betAmount">10</span>
@@ -529,6 +528,10 @@
     function changeBet(delta) { let nb = currentBet+delta; if(nb>=10 && nb<=5000) { currentBet=nb; document.getElementById('betAmount').innerText=currentBet; } }
     function setBetX2() { if(currentBet*2<=5000) { currentBet*=2; document.getElementById('betAmount').innerText=currentBet; } }
     function setMaxBet() { currentBet = Math.min(5000, currentUser?.balance||5000); document.getElementById('betAmount').innerText=currentBet; }
+
+    function checkTelegramUser() {
+        // ቁጥሩ በራሱ እንዳይሞላ ባዶ ተደርጓል
+    }
 
     async function placeBet() {
         if(!currentUser) return;
@@ -855,7 +858,7 @@
         let amt = parseFloat(document.getElementById('depositAmount').value);
         if(!name || !amt) return alert("መረጃ ይሙሉ!");
         
-        await db.ref('deposit_requests').push({ uid: currentUser.id, name, amount: amt, time: Date.now() });
+        await db.ref('deposit_requests').push({ uid: currentUser.id, name: name, amount: amt, time: Date.now() });
         
         let msg = `📥 <b>አዲስ የዴፖዚት ጥያቄ!</b>\n\n👤 <b>ተጫዋች ID:</b> ${currentUser.id}\n💰 <b>መጠን:</b> ${amt} ETB\n📝 <b>የላኪ ስም:</b> ${name}`;
         sendTelegramNotification(msg);
@@ -883,4 +886,4 @@
     
     function openDeposit() { document.getElementById('depositModal').style.display='flex'; }
     function closeDeposit() { document.getElementById('depositModal').style.display='none'; }
-    function openWithdraw() { document.getElementById('withdrawModal').style.display='flex';Normally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
+    function openWithdraw() { document.getElementById('withdrawModal').style.Normally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
